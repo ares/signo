@@ -4,6 +4,7 @@ doc
 log
 tmp
 config/sso.yml
+config/database.yml
 bundler.d/local*
 .idea
 .rbenv-gemsets

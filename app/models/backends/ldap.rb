@@ -21,7 +21,7 @@ class Backends::Ldap < Backends::Base
     @result = ldap.authenticate? @username, @password
   rescue LdapFluff::ConfigError => e
     logger.error "LDAP configuration error occured with message #{e.message}"
-  rescue Net::LDAP::LdapError => e
+  rescue Net::LDAP::LdapError, Errno::EHOSTUNREACH => e
     logger.error "An error #{e.class} occured with message #{e.message}"
     logger.error e.backtrace.join("\n")
     # @response will be nil and will result in false

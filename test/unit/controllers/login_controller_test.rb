@@ -32,6 +32,17 @@ describe LoginController do
       end
     end
 
+    context "return_url set and cookie set" do
+      let(:url) { 'https://localhost' }
+      before do
+        session[:username] = cookies[:username] = 'admin'
+        get :index, :return_url => url
+      end
+
+      it { response.must_be :redirect? }
+      it { response.redirect_url.must_include(url) }
+    end
+
     context "user is logged in" do
       let(:url) { 'https://localhost/katello/some/action' }
       before { session[:username] = 'admin' }
@@ -61,26 +72,54 @@ describe LoginController do
         stub_request(:get, "https://localhost/katello/authenticate?password=#{password}&username=#{username}").
             to_return(:status => 200, :body => "", :headers => {})
         Configuration.config.backends.stub :enabled, [:katello] do
-          post :login, :username => username, :password => password
         end
       end
 
-      context "without return url" do
-        it { response.must_be :redirect? }
-        it { session[:username].must_equal(username) }
-        it { cookies[:username].must_equal(username) }
-      end
+      context "UI" do
 
-      context "with return url in session" do
-        let(:url) { 'https://localhost/test' }
-        before do
-          session[:return_url] = url
-          Configuration.config.backends.stub :enabled, [:katello] do
-            post :login, :username => username, :password => password
+        before { post :login, :username => username, :password => password }
+
+        context "without return url" do
+          it { response.must_be :redirect? }
+          it { session[:username].must_equal(username) }
+          it { cookies[:username].must_equal(username) }
+        end
+
+        context "with return url in session" do
+          let(:url) { 'https://localhost/test' }
+          before do
+            session[:return_url] = url
+            Configuration.config.backends.stub :enabled, [:katello] do
+              post :login, :username => username, :password => password
+            end
           end
+
+          it { response.redirect_url.must_equal url }
         end
 
-        it { response.redirect_url.must_equal url }
+      end
+
+      context "API" do
+        before { @token_count = Token.count }
+
+        context "without expiration" do
+          before { get :login, :username => username, :password => password, :format => 'json' }
+
+          it { response.must_be :success? }
+          it { Token.count.must_equal(@token_count + 1) }
+          it { response.body.must_include Token.last.oauth_secret }
+          it { Token.last.expiration.must_be :>, Time.now }
+        end
+
+        context "with expiration" do
+          before { get :login, :username => username, :password => password,
+                       :format           => 'json', :expire => 1.year.to_i.to_s }
+
+          it { response.must_be :success? }
+          it { Token.count.must_equal(@token_count + 1) }
+          it { response.body.must_include Token.last.oauth_secret }
+          it { Token.last.expiration.to_i.must_equal(1.year.to_i) }
+        end
       end
     end
 
@@ -88,10 +127,17 @@ describe LoginController do
       before do
         stub_request(:get, "https://localhost/katello/authenticate?password=pass&username=#{username}").
             to_return(:status => 403, :body => "", :headers => {})
-        post :login, :username => username, :password => 'pass'
       end
 
-      it { response.must_be :success? }
+      context "UI" do
+        before { post :login, :username => username, :password => 'pass' }
+        it { response.must_be :success? }
+      end
+
+      context "API" do
+        before { get :login, :username => username, :password => 'pass', :format => 'json' }
+        it { response.code.must_equal '401' }
+      end
     end
   end
 

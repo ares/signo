@@ -1,7 +1,7 @@
 require 'test_helper'
 
 describe User do
-  let(:user) { User.new('admin', 'admin') }
+  let(:user) { UserFactory.build('admin', 'admin') }
 
   describe "#authenticate" do
     it "respects Backends::Base" do

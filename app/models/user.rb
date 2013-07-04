@@ -1,11 +1,11 @@
 # A user that can authenticate
-class User
-  attr_accessor :username, :password
+class User < ActiveRecord::Base
+  attr_accessor :password
 
-  def initialize(username, password)
-    self.username = username
-    self.password = password
-  end
+  # user can have many oauth tokens used for CLI authentication
+  has_many :tokens, :dependent => :destroy
+
+  validates :username, :uniqueness => true
 
   # authenticate user
   #

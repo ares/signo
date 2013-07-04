@@ -55,6 +55,8 @@ Sso::Application.routes.draw do
   get 'user/:username' => 'users#show'
   get 'user/:username/xrds' => 'users#user_xrds'
 
+  get 'tokens/:username' => 'tokens#list'
+
   # You can have the root of your site routed with "root"
   # just remember to delete public/index.html.
   root :to => 'login#index'

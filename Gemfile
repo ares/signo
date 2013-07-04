@@ -36,6 +36,8 @@ gem 'thin'
 # To use debugger
 # gem 'debugger'
 
+# for OAuth requests handling
+gem 'oauth'
 # OpenID provider support
 gem 'ruby-openid'
 # Direct LDAP auth backend

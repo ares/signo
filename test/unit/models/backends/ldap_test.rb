@@ -3,7 +3,7 @@ require 'test_helper'
 describe Backends::Ldap do
   let(:username) { "admin" }
   let(:password) { "admin" }
-  let(:user) { User.new username, password }
+  let(:user) { UserFactory.build(username, password) }
   let(:backend) { Backends::Ldap.new }
   let(:authentication) { backend.authenticate(user) }
 

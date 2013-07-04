@@ -5,7 +5,7 @@ describe Backends::Katello do
   let(:username) { "admin" }
   let(:password) { "admin" }
   let(:url) { "https://locahost/katello" }
-  let(:user) { User.new username, password }
+  let(:user) { UserFactory.build(username, password) }
   let(:backend) { Backends::Katello.new }
   let(:authentication) { backend.authenticate(user) }
 
@@ -44,7 +44,7 @@ describe Backends::Katello do
 
       it "escapes credentials" do
         Configuration.config.backends.katello.stub :url, url do
-          Backends::Katello.new.authenticate(User.new(wide_username, wide_password))
+          Backends::Katello.new.authenticate(UserFactory.build(wide_username, wide_password))
         end
       end
     end

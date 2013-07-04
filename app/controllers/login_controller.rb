@@ -2,6 +2,7 @@ require 'pathname'
 require "openid"
 require "openid/consumer/discovery"
 require 'openid/store/filesystem'
+require 'oauth'
 
 
 class LoginController < ApplicationController
@@ -22,15 +23,37 @@ class LoginController < ApplicationController
   end
 
   def login
-    user = User.new(params[:username], params[:password])
+    user = User.find_or_create_by_username(params[:username])
+    user.password = params[:password]
     if user.authenticate
-      session[:username] = user.username
-      cookies[:username] = { :value   => current_username,
-                             :expires => ::Configuration.config.cookie_life.hours.from_now }
-      redirect_to return_url
+      respond_to do |format|
+        format.html do
+          session[:username] = user.username
+          cookies[:username] = { :value => current_username,
+                                 :expires => ::Configuration.config.cookie_life.hours.from_now }
+          redirect_to return_url
+        end
+
+        format.json do
+          token = user.tokens.build(:oauth_secret => OAuth::Helper.generate_key, :expiration => expiration)
+          if token.save
+            render :json => {:oauth_secret => token.oauth_secret, :expiration => token.expiration}
+          else
+            render :json => {}, :status => 500
+          end
+        end
+      end
     else
-      flash.now[:error] = _('Authentication failed, try again')
-      render :action => 'index'
+      respond_to do |format|
+        format.html do
+          flash.now[:error] = _('Authentication failed, try again')
+          render :action => 'index'
+        end
+
+        format.json do
+          render :json => {}, :status => 401
+        end
+      end
     end
   end
 
@@ -97,6 +120,11 @@ class LoginController < ApplicationController
 
   private
 
+  def expiration
+    default_expiration = ::Configuration.config.oauth_token_life.hours.from_now
+    params[:expire].present? ? Time.at(params[:expire].to_i) : default_expiration
+  end
+
   def set_notice
     case params[:notice]
       when 'logout'
@@ -108,14 +136,6 @@ class LoginController < ApplicationController
       else
         raise ArgumentError, "unsupported notice '#{params[:notice]}'"
     end
-  end
-
-  def is_logged_in?
-    current_username.present?
-  end
-
-  def current_username
-    session[:username]
   end
 
   def is_authorized(relay_party)
@@ -137,10 +157,6 @@ class LoginController < ApplicationController
       else
         render :text => web_response.body, :status => 400
     end
-  end
-
-  def url_for_user
-    url_for :controller => 'user', :action => current_username
   end
 
   def server

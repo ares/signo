@@ -54,6 +54,15 @@
   cookie_life: <%= 24 * 356 %>
   # for how long user is logged in to this application, every request refreshes the timeout
   session_life: 10
+  # fow how long should be tokens created by default (in hours)
+  oauth_token_life: 8
+
+  # OAuth api authentication
+  consumers:
+    katello:
+      secret: shhhh
+    foreman:
+      secret: shhhh
 
   # when adding a new logger don't forget to add it in here even if it's disabled by default
   # otherwise log trace feature won't work for such logger
@@ -118,6 +127,10 @@ development:
     :katello:
       :url: https://<%= Socket.gethostname %>/katello/authenticate
 
+  consumers:
+    katello:
+      secret: shhhh
+
   :logging:
     colorize: true
     :loggers:
@@ -131,5 +144,9 @@ test:
   :backends:
     :katello:
       :url: https://localhost/katello/authenticate
+  consumers:
+    katello:
+      secret: shhhh
+
 production:
 build:
